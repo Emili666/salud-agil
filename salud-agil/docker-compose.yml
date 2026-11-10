@@ -1,0 +1,38 @@
+# Levanta todo el piloto: MariaDB + API Spring Boot + frontend (nginx).
+# Uso: docker compose up --build   →   http://localhost:3000
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: saludagil
+      MARIADB_USER: saludagil
+      MARIADB_PASSWORD: saludagil
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - datos-mariadb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: mariadb
+      DB_HOST: db
+      TZ: America/Bogota
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  datos-mariadb:
