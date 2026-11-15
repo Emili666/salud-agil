@@ -21,6 +21,11 @@ services:
       SPRING_PROFILES_ACTIVE: mariadb
       DB_HOST: db
       TZ: America/Bogota
+      CORREO_HABILITADO: ${CORREO_HABILITADO:-false}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      CORREO_REMITENTE: ${CORREO_REMITENTE:-}
+      CORREO_REMITENTE_NOMBRE: ${CORREO_REMITENTE_NOMBRE:-Salud Ágil}
+      CORREO_DESTINO_FORZADO: ${CORREO_DESTINO_FORZADO:-}
     depends_on:
       db:
         condition: service_healthy

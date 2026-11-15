@@ -14,7 +14,7 @@ Proyecto del curso **Formulación de Proyectos**, Ingeniería de Sistemas y Comp
 |---|---|
 | Consultar disponibilidad en tiempo real por punto, con fecha y hora de la última actualización | *Soy afiliado → ¿Está mi medicamento?* · `GET /api/medicamentos/{id}/disponibilidad` |
 | Seguir el estado de la fórmula: pendiente, en tránsito, disponible, entregada | *Soy afiliado → Mis fórmulas y turnos* · `GET /api/afiliados/{documento}` |
-| Notificaciones por SMS, WhatsApp o correo cuando el medicamento llega o cambia de estado | `NotificacionService` + `EnviadorNotificaciones` (simulado: escribe en el log y queda en la tabla `notificacion`; el afiliado los ve en *Mis avisos*) |
+| Notificaciones por SMS, WhatsApp o correo cuando el medicamento llega o cambia de estado | `NotificacionService` + `EnviadorNotificaciones` (SMS y WhatsApp simulados; correo opcional por HTTPS con Brevo; los avisos quedan en la tabla `notificacion` y el afiliado los ve en *Mis avisos*) |
 | Entregas parciales y medicamentos pendientes | `FormulaService.dispensar(...)` entrega lo que haya y deja la fórmula PENDIENTE con lo que falta |
 | Agendar turno para distribuir la demanda durante el día | Franjas de 30 min con cupo de 4 personas (configurable) · `/api/turnos` |
 | Tablero de indicadores para la EPS y el gestor farmacéutico | *Indicadores EPS* · `GET /api/indicadores` |
@@ -66,7 +66,7 @@ Paquetes del backend (`co.edu.uniquindio.saludagil`):
 - `dto` — records de entrada y salida.
 - `config` — propiedades de negocio, CORS y carga de datos de demostración.
 
-El envío real de mensajes se deja detrás de la interfaz `EnviadorNotificaciones`: para pasar a producción basta con agregar una implementación por proveedor (p. ej. Twilio para SMS, WhatsApp Cloud API, SMTP para correo) sin tocar los servicios.
+El envío de mensajes se deja detrás de la interfaz `EnviadorNotificaciones`. El correo se puede activar con la API HTTP de Brevo; SMS y WhatsApp siguen simulados. La solicitud de correo se ejecuta en segundo plano y un fallo del proveedor no revierte la operación de negocio ni el registro del aviso.
 
 ---
 
@@ -105,6 +105,29 @@ mvn test
 ```
 
 `FlujoDispensacionTest` recorre el flujo completo: consulta por punto, llegada de inventario que habilita una fórmula y notifica, turno y entrega completa, entrega parcial, cupo por franja y cálculo de indicadores.
+
+### Correo transaccional con Brevo (opcional)
+
+El correo está desactivado por defecto. Para habilitarlo, configura las siguientes variables de entorno; no guardes la API key en el repositorio. Con el correo habilitado pero sin API key o remitente, la aplicación avisa en el log y continúa usando el envío simulado.
+
+| Variable | Uso |
+|---|---|
+| `CORREO_HABILITADO` | Activar el envío por Brevo (`true`); por defecto `false`. |
+| `BREVO_API_KEY` | API key v3 de Brevo. |
+| `CORREO_REMITENTE` | Dirección de correo verificada en Brevo. |
+| `CORREO_REMITENTE_NOMBRE` | Nombre visible del remitente; por defecto `Salud Ágil`. |
+| `CORREO_DESTINO_FORZADO` | Dirección opcional para redirigir todos los correos de demostración. El cuerpo indica cuál era el destinatario original. |
+
+Brevo requiere una API key v3 y un remitente/dominio verificado. Si el hosting no puede enviar porque Brevo rechaza la IP de origen, desactiva **Authorized IPs** en la configuración de seguridad de la API key. La integración usa HTTPS (puerto 443), no SMTP. SMS y WhatsApp continúan simulados.
+
+Ejemplo local desde la carpeta `backend` (sintaxis de shell POSIX):
+
+```bash
+CORREO_HABILITADO=true BREVO_API_KEY=... CORREO_REMITENTE=... \
+CORREO_DESTINO_FORZADO=... mvn spring-boot:run
+```
+
+Para desplegar en Render, crea o abre el servicio backend, ve a **Environment** y agrega las variables de la tabla. Usa una dirección de `CORREO_DESTINO_FORZADO` durante las demostraciones y guarda `BREVO_API_KEY` como variable secreta de Render. Si no configuras `CORREO_HABILITADO=true`, el envío permanece simulado.
 
 ---
 
@@ -151,7 +174,7 @@ Otros documentos de demostración: `1094000002` (José: fórmula en camino y una
 
 - **Sin autenticación.** En producción: Spring Security con roles AFILIADO, FARMACIA y EPS, y validación de identidad del afiliado (no basta con el número de documento).
 - **Datos personales y de salud.** Antes de usar datos reales hay que cumplir la Ley 1581 de 2012 (habeas data): autorización del titular, política de tratamiento y cifrado.
-- **Notificaciones simuladas.** Falta conectar proveedores reales de SMS, WhatsApp y correo.
+- **Notificaciones parcialmente simuladas.** SMS y WhatsApp siguen simulados; el correo real depende de la configuración de Brevo.
 - **Inventario cargado a mano.** La integración por API con los sistemas de las farmacias (propuesta a futuro) reemplazaría la pestaña de inventario.
 - **Sin reserva de existencias.** Dos fórmulas pueden quedar "disponibles" con las mismas unidades. Si se agotan antes de la entrega, la fórmula vuelve a pendiente y se avisa al afiliado. Una mejora sería apartar las unidades al agendar el turno.
 - **Indicadores calculados en memoria.** Suficiente para tres puntos; con más volumen convendría usar consultas agregadas.
