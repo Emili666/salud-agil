@@ -108,7 +108,7 @@ mvn test
 
 ### Correo transaccional con Brevo (opcional)
 
-El correo está desactivado por defecto. Para habilitarlo, configura las siguientes variables de entorno; no guardes la API key en el repositorio. Con el correo habilitado pero sin API key o remitente, la aplicación avisa en el log y continúa usando el envío simulado.
+El correo está desactivado por defecto. Para habilitarlo localmente sin escribir las variables en la terminal, copia `.env.example` como `.env` en la raíz del proyecto y completa allí los valores. `.env` está excluido de Git; no guardes ni subas la API key al repositorio. Con el correo habilitado pero sin API key o remitente, la aplicación avisa en el log y continúa usando el envío simulado.
 
 | Variable | Uso |
 |---|---|
@@ -120,14 +120,17 @@ El correo está desactivado por defecto. Para habilitarlo, configura las siguien
 
 Brevo requiere una API key v3 y un remitente/dominio verificado. Si el hosting no puede enviar porque Brevo rechaza la IP de origen, desactiva **Authorized IPs** en la configuración de seguridad de la API key. La integración usa HTTPS (puerto 443), no SMTP. SMS y WhatsApp continúan simulados.
 
-Ejemplo local desde la carpeta `backend` (sintaxis de shell POSIX):
+En PowerShell, desde la raíz del proyecto:
 
-```bash
-CORREO_HABILITADO=true BREVO_API_KEY=... CORREO_REMITENTE=... \
-CORREO_DESTINO_FORZADO=... mvn spring-boot:run
+```powershell
+Copy-Item .env.example .env
+# Edita .env y asigna CORREO_HABILITADO=true, la API key,
+# el remitente verificado y CORREO_DESTINO_FORZADO.
+Set-Location backend
+mvn spring-boot:run
 ```
 
-Para desplegar en Render, crea o abre el servicio backend, ve a **Environment** y agrega las variables de la tabla. Usa una dirección de `CORREO_DESTINO_FORZADO` durante las demostraciones y guarda `BREVO_API_KEY` como variable secreta de Render. Si no configuras `CORREO_HABILITADO=true`, el envío permanece simulado.
+El backend carga ese `.env` al arrancar con Maven desde la carpeta `backend`. Docker Compose también lee automáticamente el `.env` ubicado junto a `docker-compose.yml`; ejecuta `docker compose up --build` desde la raíz del proyecto. Para desplegar en Render, no subas ni uses el `.env`: agrega las variables directamente en **Environment** y guarda `BREVO_API_KEY` como variable secreta. Usa una dirección de `CORREO_DESTINO_FORZADO` durante las demostraciones. Si no configuras `CORREO_HABILITADO=true`, el envío permanece simulado.
 
 ---
 

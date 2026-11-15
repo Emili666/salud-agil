@@ -11,8 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
@@ -48,8 +51,10 @@ class EnviadorCorreoBrevoTest {
         preparado.enviador().enviar(Canal.SMS, "3001234567", "Aviso SMS");
         preparado.enviador().enviar(Canal.WHATSAPP, "3001234567", "Aviso WhatsApp");
 
-        verify(preparado.simulado()).enviar(Canal.SMS, "3001234567", "Aviso SMS");
-        verify(preparado.simulado()).enviar(Canal.WHATSAPP, "3001234567", "Aviso WhatsApp");
+        assertEquals(List.of(
+                new Envio(Canal.SMS, "3001234567", "Aviso SMS"),
+                new Envio(Canal.WHATSAPP, "3001234567", "Aviso WhatsApp")),
+                preparado.simulado().envios());
         preparado.servidor().verify();
     }
 
@@ -98,15 +103,31 @@ class EnviadorCorreoBrevoTest {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer servidor = MockRestServiceServer.bindTo(builder).build();
         RestClient cliente = builder.build();
-        EnviadorNotificaciones simulado = mock(EnviadorNotificaciones.class);
+        EnviadorSimuladoGrabador simulado = new EnviadorSimuladoGrabador();
         CorreoProperties properties = new CorreoProperties(true, "brevo", "clave-de-prueba",
                 "avisos@salud-agil.test", "Salud Ágil", destinoForzado);
         return new Preparado(new EnviadorCorreoBrevo(properties, simulado, cliente), simulado, servidor);
     }
 
+    private static final class EnviadorSimuladoGrabador implements EnviadorNotificaciones {
+        private final List<Envio> envios = new ArrayList<>();
+
+        @Override
+        public void enviar(Canal canal, String destino, String mensaje) {
+            envios.add(new Envio(canal, destino, mensaje));
+        }
+
+        List<Envio> envios() {
+            return List.copyOf(envios);
+        }
+    }
+
+    private record Envio(Canal canal, String destino, String mensaje) {
+    }
+
     private record Preparado(
             EnviadorCorreoBrevo enviador,
-            EnviadorNotificaciones simulado,
+            EnviadorSimuladoGrabador simulado,
             MockRestServiceServer servidor) {
     }
 }

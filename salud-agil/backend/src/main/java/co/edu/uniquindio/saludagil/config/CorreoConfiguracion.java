@@ -31,13 +31,13 @@ public class CorreoConfiguracion {
     }
 
     @Bean
-    RestClient clienteBrevo(RestClient.Builder builder) {
+    RestClient clienteBrevo() {
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .build();
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
         requestFactory.setReadTimeout(Duration.ofSeconds(10));
-        return builder.requestFactory(requestFactory).build();
+        return RestClient.builder().requestFactory(requestFactory).build();
     }
 
     @Bean(name = "correoTaskExecutor")
