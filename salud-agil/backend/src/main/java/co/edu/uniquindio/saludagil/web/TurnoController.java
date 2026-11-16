@@ -3,6 +3,8 @@ package co.edu.uniquindio.saludagil.web;
 import co.edu.uniquindio.saludagil.dto.AgendarTurnoRequest;
 import co.edu.uniquindio.saludagil.dto.FranjaDto;
 import co.edu.uniquindio.saludagil.dto.TurnoDto;
+import co.edu.uniquindio.saludagil.service.FormulaService;
+import co.edu.uniquindio.saludagil.service.Sesion;
 import co.edu.uniquindio.saludagil.service.TurnoService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -17,9 +19,11 @@ import java.util.List;
 public class TurnoController {
 
     private final TurnoService turnoService;
+    private final FormulaService formulaService;
 
-    public TurnoController(TurnoService turnoService) {
+    public TurnoController(TurnoService turnoService, FormulaService formulaService) {
         this.turnoService = turnoService;
+        this.formulaService = formulaService;
     }
 
     @GetMapping("/franjas")
@@ -30,12 +34,16 @@ public class TurnoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TurnoDto agendar(@Valid @RequestBody AgendarTurnoRequest solicitud) {
+    public TurnoDto agendar(@Valid @RequestBody AgendarTurnoRequest solicitud,
+                            @RequestAttribute(AutenticacionInterceptor.SESION) Sesion sesion) {
+        sesion.exigirAfiliado(formulaService.buscar(solicitud.formulaCodigo()).getAfiliado().getDocumento());
         return turnoService.agendar(solicitud);
     }
 
     @DeleteMapping("/{codigo}")
-    public TurnoDto cancelar(@PathVariable("codigo") String codigo) {
+    public TurnoDto cancelar(@PathVariable("codigo") String codigo,
+                             @RequestAttribute(AutenticacionInterceptor.SESION) Sesion sesion) {
+        sesion.exigirAfiliado(turnoService.documentoDelAfiliado(codigo));
         return turnoService.cancelar(codigo);
     }
 }
