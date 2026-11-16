@@ -1,14 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { leerSesion } from '../sesion'
 import { Aviso, Cargando, EstadoFormula, Nivel, useToast } from '../comun/Ui'
 import { CANAL, fechaCorta, fechaHora, fechaLarga, hace, hora12, proximosDias } from '../comun/formato'
-
-const DOCUMENTOS_DEMO = [
-  { doc: '1094000001', quien: 'María Elena (una lista, una pendiente)' },
-  { doc: '1094000002', quien: 'José Arcángel (en camino y por calificar)' },
-  { doc: '1094000003', quien: 'Luz Dary (entrega parcial)' },
-  { doc: '1094000004', quien: 'Carlos Andrés (turno agendado)' }
-]
 
 export default function Afiliado() {
   const [seccion, setSeccion] = useState(null)
@@ -139,26 +133,22 @@ function ResumenDisponibilidad({ filas }) {
 /* ------------------------------------------------------------------ fórmulas */
 
 function MisFormulas({ volver }) {
-  const [documento, setDocumento] = useState('')
+  // El afiliado solo ve sus propios datos: el documento sale de la sesión.
+  const documento = leerSesion()?.documento ?? ''
   const [resumen, setResumen] = useState(null)
-  const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
   const [toast, mostrar] = useToast()
 
-  async function cargar(doc = documento) {
-    if (!doc.trim()) return
-    setCargando(true)
+  async function cargar() {
     setError('')
     try {
-      setResumen(await api.afiliado(doc.trim()))
-      setDocumento(doc.trim())
+      setResumen(await api.afiliado(documento))
     } catch (e) {
-      setResumen(null)
       setError(e.message)
-    } finally {
-      setCargando(false)
     }
   }
+
+  useEffect(() => { cargar() }, [])
 
   const avisar = (texto, tipo) => {
     mostrar(texto, tipo)
@@ -170,25 +160,8 @@ function MisFormulas({ volver }) {
       <section>
         <button type="button" className="volver" onClick={volver}>← Volver</button>
         <h1>Mis fórmulas y turnos</h1>
-        <form className="formulario-documento" onSubmit={(e) => { e.preventDefault(); cargar() }}>
-          <label className="campo">
-            <span>Número de documento del afiliado</span>
-            <input inputMode="numeric" value={documento} autoFocus
-                   onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))} />
-          </label>
-          <button type="submit" className="primario" disabled={cargando}>{cargando ? 'Buscando…' : 'Consultar'}</button>
-        </form>
         <Aviso tipo="error">{error}</Aviso>
-        <details className="demo">
-          <summary>Documentos de demostración</summary>
-          <ul>
-            {DOCUMENTOS_DEMO.map((d) => (
-              <li key={d.doc}>
-                <button type="button" className="enlace" onClick={() => cargar(d.doc)}>{d.doc}</button> — {d.quien}
-              </li>
-            ))}
-          </ul>
-        </details>
+        {!error && <Cargando texto="Consultando sus fórmulas…" />}
       </section>
     )
   }
@@ -199,7 +172,7 @@ function MisFormulas({ volver }) {
   return (
     <section>
       {toast}
-      <button type="button" className="volver" onClick={() => setResumen(null)}>← Cambiar de afiliado</button>
+      <button type="button" className="volver" onClick={volver}>← Volver</button>
       <h1>Hola, {resumen.nombres.split(' ')[0]}</h1>
       <p className="entrada">
         Le avisamos por <strong>{CANAL[resumen.canalPreferido]}</strong> al {resumen.destinoEnmascarado} cuando su
