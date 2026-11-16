@@ -1,14 +1,25 @@
 // Cliente HTTP del backend. En desarrollo Vite redirige /api a http://localhost:8080.
+import { guardarSesion, leerSesion } from './sesion'
+
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 
 async function solicitar(ruta, { method = 'GET', body } = {}) {
+  const headers = {}
+  if (body) headers['Content-Type'] = 'application/json'
+  const token = leerSesion()?.token
+  if (token) headers.Authorization = `Bearer ${token}`
+
   const respuesta = await fetch(BASE + ruta, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers,
     body: body ? JSON.stringify(body) : undefined
   })
   const texto = await respuesta.text()
   const datos = texto ? JSON.parse(texto) : null
+  if (respuesta.status === 401 && token) {
+    // La sesión venció o el backend se reinició: volver a la pantalla de ingreso.
+    guardarSesion(null)
+  }
   if (!respuesta.ok) {
     throw new Error(datos?.mensaje ?? `Error ${respuesta.status}`)
   }
@@ -18,6 +29,11 @@ async function solicitar(ruta, { method = 'GET', body } = {}) {
 const q = encodeURIComponent
 
 export const api = {
+  // Autenticación
+  login: (usuario, clave) => solicitar('/auth/login', { method: 'POST', body: { usuario, clave } }),
+  registro: (documento, correo, clave) =>
+    solicitar('/auth/registro', { method: 'POST', body: { documento, correo, clave } }),
+  logout: () => solicitar('/auth/logout', { method: 'POST' }),
   // Afiliado
   puntos: () => solicitar('/puntos'),
   medicamentos: (texto = '') => solicitar(`/medicamentos?q=${q(texto)}`),

@@ -42,6 +42,12 @@ public class Afiliado {
         return canalPreferido == Canal.EMAIL ? correo : telefono;
     }
 
+    /** Al crear su cuenta, el afiliado registra un correo y desde entonces recibe los avisos por ese canal. */
+    public void usarCorreoParaAvisos(String correo) {
+        this.correo = correo;
+        this.canalPreferido = Canal.EMAIL;
+    }
+
     public Long getId() { return id; }
     public String getDocumento() { return documento; }
     public String getNombres() { return nombres; }
