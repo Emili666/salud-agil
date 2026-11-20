@@ -52,7 +52,7 @@ Los datos de demostración incluyen 45 fórmulas históricas de los últimos 30 
 
 ```
 frontend/  React 18 + Vite        →  vistas: afiliado, farmacia, indicadores
-backend/   Java 21 + Spring Boot 3.5 (Web, Data JPA, Validation)
+backend/   Java 21 + Spring Boot 4.1.2 (Web, Data JPA, Validation)
            H2 en memoria (desarrollo) · MariaDB (perfil "mariadb")
 docker-compose.yml  →  MariaDB + backend + frontend (nginx)
 ```
@@ -175,7 +175,6 @@ Otros documentos de demostración: `1094000002` (José: fórmula en camino y una
 
 ## Limitaciones del prototipo y siguientes pasos
 
-- **Sin autenticación.** En producción: Spring Security con roles AFILIADO, FARMACIA y EPS, y validación de identidad del afiliado (no basta con el número de documento).
 - **Datos personales y de salud.** Antes de usar datos reales hay que cumplir la Ley 1581 de 2012 (habeas data): autorización del titular, política de tratamiento y cifrado.
 - **Notificaciones parcialmente simuladas.** SMS y WhatsApp siguen simulados; el correo real depende de la configuración de Brevo.
 - **Inventario cargado a mano.** La integración por API con los sistemas de las farmacias (propuesta a futuro) reemplazaría la pestaña de inventario.
