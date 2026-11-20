@@ -2,6 +2,7 @@ package co.edu.uniquindio.saludagil.config;
 
 import co.edu.uniquindio.saludagil.domain.*;
 import co.edu.uniquindio.saludagil.repository.*;
+import co.edu.uniquindio.saludagil.service.ClaveHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -35,6 +36,7 @@ public class DatosIniciales implements CommandLineRunner {
     private final NotificacionRepository notificacionRepository;
     private final ConteoFisicoRepository conteoRepository;
     private final EncuestaRepository encuestaRepository;
+    private final UsuarioRepository usuarioRepository;
     private final SaludAgilProperties propiedades;
 
     private final Random azar = new Random(2026);
@@ -45,7 +47,7 @@ public class DatosIniciales implements CommandLineRunner {
                           FormulaRepository formulaRepository, DispensacionRepository dispensacionRepository,
                           TurnoRepository turnoRepository, NotificacionRepository notificacionRepository,
                           ConteoFisicoRepository conteoRepository, EncuestaRepository encuestaRepository,
-                          SaludAgilProperties propiedades) {
+                          UsuarioRepository usuarioRepository, SaludAgilProperties propiedades) {
         this.puntoRepository = puntoRepository;
         this.medicamentoRepository = medicamentoRepository;
         this.inventarioRepository = inventarioRepository;
@@ -56,15 +58,39 @@ public class DatosIniciales implements CommandLineRunner {
         this.notificacionRepository = notificacionRepository;
         this.conteoRepository = conteoRepository;
         this.encuestaRepository = encuestaRepository;
+        this.usuarioRepository = usuarioRepository;
         this.propiedades = propiedades;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
-        if (puntoRepository.count() > 0) {
-            return;
+        if (puntoRepository.count() == 0) {
+            cargarDatosDemo();
         }
+        // Va aparte para que una base MariaDB creada antes de la autenticación también reciba las cuentas.
+        if (usuarioRepository.count() == 0) {
+            cargarUsuariosDemo();
+        }
+    }
+
+    /**
+     * Cuentas de demostración. Afiliados: documento + "salud123". Personal: farmacia/farmacia123 y eps/eps123.
+     * Los demás afiliados pueden crear su cuenta desde la pantalla de registro.
+     */
+    private void cargarUsuariosDemo() {
+        String claveAfiliados = ClaveHasher.hash("salud123");
+        for (String documento : List.of("1094000001", "1094000002", "1094000003", "1094000004")) {
+            afiliadoRepository.findByDocumento(documento)
+                    .ifPresent(a -> usuarioRepository.save(Usuario.afiliado(a, claveAfiliados)));
+        }
+        usuarioRepository.save(Usuario.personal("farmacia", "Personal de farmacia", Rol.FARMACIA,
+                ClaveHasher.hash("farmacia123")));
+        usuarioRepository.save(Usuario.personal("eps", "Gestor de la EPS", Rol.EPS, ClaveHasher.hash("eps123")));
+        log.info("Cuentas de demostración creadas (afiliados: documento/salud123, farmacia/farmacia123, eps/eps123)");
+    }
+
+    private void cargarDatosDemo() {
         LocalDateTime ahora = LocalDateTime.now();
         String horario = "Lunes a sábado, 7:00 a.m. a 5:00 p.m.";
 

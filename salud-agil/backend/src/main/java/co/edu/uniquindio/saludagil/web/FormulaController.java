@@ -3,6 +3,7 @@ package co.edu.uniquindio.saludagil.web;
 import co.edu.uniquindio.saludagil.dto.EncuestaRequest;
 import co.edu.uniquindio.saludagil.dto.FormulaDto;
 import co.edu.uniquindio.saludagil.service.FormulaService;
+import co.edu.uniquindio.saludagil.service.Sesion;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,13 +19,17 @@ public class FormulaController {
     }
 
     @GetMapping("/{codigo}")
-    public FormulaDto obtener(@PathVariable("codigo") String codigo) {
+    public FormulaDto obtener(@PathVariable("codigo") String codigo,
+                              @RequestAttribute(AutenticacionInterceptor.SESION) Sesion sesion) {
+        sesion.exigirAfiliado(formulaService.buscar(codigo).getAfiliado().getDocumento());
         return formulaService.obtener(codigo);
     }
 
     @PostMapping("/{codigo}/encuesta")
     @ResponseStatus(HttpStatus.CREATED)
-    public void calificar(@PathVariable("codigo") String codigo, @Valid @RequestBody EncuestaRequest solicitud) {
+    public void calificar(@PathVariable("codigo") String codigo, @Valid @RequestBody EncuestaRequest solicitud,
+                          @RequestAttribute(AutenticacionInterceptor.SESION) Sesion sesion) {
+        sesion.exigirAfiliado(formulaService.buscar(codigo).getAfiliado().getDocumento());
         formulaService.registrarEncuesta(codigo, solicitud);
     }
 }

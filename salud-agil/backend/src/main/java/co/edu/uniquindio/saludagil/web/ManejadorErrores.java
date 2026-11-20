@@ -1,5 +1,7 @@
 package co.edu.uniquindio.saludagil.web;
 
+import co.edu.uniquindio.saludagil.service.AccesoDenegadoException;
+import co.edu.uniquindio.saludagil.service.NoAutenticadoException;
 import co.edu.uniquindio.saludagil.service.RecursoNoEncontradoException;
 import co.edu.uniquindio.saludagil.service.ReglaNegocioException;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,16 @@ public class ManejadorErrores {
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<Map<String, Object>> noEncontrado(RecursoNoEncontradoException e) {
         return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(NoAutenticadoException.class)
+    public ResponseEntity<Map<String, Object>> noAutenticado(NoAutenticadoException e) {
+        return respuesta(HttpStatus.UNAUTHORIZED, e.getMessage());
+    }
+
+    @ExceptionHandler(AccesoDenegadoException.class)
+    public ResponseEntity<Map<String, Object>> accesoDenegado(AccesoDenegadoException e) {
+        return respuesta(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
     @ExceptionHandler(ReglaNegocioException.class)

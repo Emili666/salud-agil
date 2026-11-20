@@ -4,6 +4,7 @@ import co.edu.uniquindio.saludagil.dto.*;
 import co.edu.uniquindio.saludagil.service.FormulaService;
 import co.edu.uniquindio.saludagil.service.InventarioService;
 import co.edu.uniquindio.saludagil.service.NotificacionService;
+import co.edu.uniquindio.saludagil.service.Sesion;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,12 +41,16 @@ public class ConsultaController {
     }
 
     @GetMapping("/afiliados/{documento}")
-    public AfiliadoResumenDto afiliado(@PathVariable("documento") String documento) {
+    public AfiliadoResumenDto afiliado(@PathVariable("documento") String documento,
+                                       @RequestAttribute(AutenticacionInterceptor.SESION) Sesion sesion) {
+        sesion.exigirAfiliado(documento.trim());
         return formulaService.resumenAfiliado(documento);
     }
 
     @GetMapping("/afiliados/{documento}/notificaciones")
-    public List<NotificacionDto> notificaciones(@PathVariable("documento") String documento) {
+    public List<NotificacionDto> notificaciones(@PathVariable("documento") String documento,
+                                                @RequestAttribute(AutenticacionInterceptor.SESION) Sesion sesion) {
+        sesion.exigirAfiliado(documento.trim());
         return notificacionService.listarPorDocumento(documento);
     }
 }

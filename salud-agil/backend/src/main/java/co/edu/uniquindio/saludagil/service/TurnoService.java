@@ -111,6 +111,13 @@ public class TurnoService {
     }
 
     @Transactional(readOnly = true)
+    public String documentoDelAfiliado(String codigoTurno) {
+        return turnoRepository.findByCodigo(codigoTurno.trim().toUpperCase())
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe el turno " + codigoTurno))
+                .getFormula().getAfiliado().getDocumento();
+    }
+
+    @Transactional(readOnly = true)
     public List<TurnoDto> listarPorPunto(Long puntoId, LocalDate fecha) {
         return turnoRepository.findByPuntoIdAndFechaOrderByHoraAsc(puntoId, fecha).stream()
                 .map(Mapeo::turno)
